@@ -1,0 +1,25 @@
+{
+    "name": "landofcoder/module-marketplace-seller-product-graphql",
+    "description": "Magento 2 Marketplace Seller Fulfillment GraphQl extension",
+    "type": "magento2-module",
+    "license": "OSL-3.0",
+    "authors": [
+        {
+            "name": "landofcoder",
+            "email": "info@landofcoder.com",
+            "homepage": "https://landofcoder.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "version": "1.0.0",
+    "require": {
+    },
+    "autoload": {
+        "psr-4": {
+            "Lof\\SellerReviewGraphQl\\": ""
+        },
+        "files": [
+            "registration.php"
+        ]
+    }
+}
