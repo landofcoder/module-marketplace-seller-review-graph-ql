@@ -19,8 +19,6 @@
 enum UrlRewriteEntityTypeEnum {
     LOF_MARKETPLACE
 }
-
-
 type StoreConfig {
     lofmarketplace_general_enable  : String  @doc(description: "Query by lofmarketplace_general_enable.")
     lofmarketplace_general_rating_approval  : String  @doc(description: "Query by lofmarketplace_general_rating_approval.")
@@ -28,19 +26,21 @@ type StoreConfig {
 }
 
 type Query {
-    lofSellerById(
-        seller_id: Int! @doc(description: "Seller id")
-    ): Seller @resolver(class: "\\Lof\\SellerReviewGraphQl\\Model\\Resolver\\SellerById") @doc(description: "Get Seller by ID") @cache( cacheIdentity: "Lof\\SellerReviewGraphQl\\Model\\Resolver\\SellerById\\Identity")
+
+    lofSellerRatingById(
+        seller_id: Int! @doc(description: "filter by review id."),
+        pageSize: Int = 5 @doc(description: "Specifies the maximum number of results to return at once. This attribute is optional."),
+    ):SellerRates @resolver(class: "\\Lof\\SellerReviewGraphQl\\Model\\Resolver\\SellerById") @doc(description: "The seller query searches for sellers that match the criteria specified in the search and filter attributes")
 
     lofSellerListRating(
        pageSize: Int = 5 @doc(description: "Specifies the maximum number of results to return at once. This attribute is optional."),
        currentPage: Int = 1 @doc(description: "Specifies which page of results to return. The default value is 1."),
-  ):Sellers @resolver(class: "\\Lof\\SellerReviewGraphQl\\Model\\Resolver\\Sellers") @doc(description: "The seller query searches for sellers that match the criteria specified in the search and filter attributes") @cache( cacheIdentity: "Lof\\SellerReviewGraphQl\\Model\\Resolver\\Sellers\\Identity")
+     ):Sellers @resolver(class: "\\Lof\\SellerReviewGraphQl\\Model\\Resolver\\Sellers") @doc(description: "The seller query searches for sellers that match the criteria specified in the search and filter attributes") @cache( cacheIdentity: "Lof\\SellerReviewGraphQl\\Model\\Resolver\\Sellers\\Identity")
+
 
 }
 
 type Mutation {
-
     LofMkpReviewSeller(input: ReviewInput!): Res @resolver(class: "\\Lof\\SellerReviewGraphQl\\Model\\Resolver\\ReviewSeller") @doc(description: "Review Seller")
 }
 
@@ -61,8 +61,9 @@ type SellerRate {
 }
 
 type Seller {
+
     seller_id: Int @doc(description: "Seller ID")
-    customer_id: Int @doc(description: "Customer Id")
+    customer_id: Int @doc(description: "Customer ID")
     seller_rates: SellerRates @doc(description: "Seller Rates")
 }
 type Sellers {
@@ -71,7 +72,6 @@ type Sellers {
     page_info: SearchResultPageInfo @doc(description: "An object that includes the page_info and currentPage values specified in the query.")
     sort_fields: SortFields @doc(description: "An object that includes the default sort field and all available sort fields.") @resolver(class: "Lof\\SellerReviewGraphQl\\Model\\Resolver\\Sellers\\SortFields")
 }
-
 
 type SellerRates {
     total_count: Int @doc(description: "The number of seller rates returned")

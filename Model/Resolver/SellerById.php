@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Landofcoder
  *
@@ -21,43 +22,85 @@
 
 namespace Lof\SellerReviewGraphQl\Model\Resolver;
 
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\GraphQl\Config\Element\Field;
+use Magento\Framework\Exception\InputException;
+use Magento\Framework\GraphQl\Exception\GraphQlInputException;
+use Magento\Framework\GraphQl\Exception\GraphQlNoSuchEntityException;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Search\Model\Query;
+use Magento\Store\Api\Data\StoreInterface;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\GraphQl\Query\Resolver\Argument\SearchCriteria\Builder as SearchCriteriaBuilder;
+use Magento\Framework\GraphQl\Query\Resolver\Argument\SearchCriteria\ArgumentApplier\Filter;
+use Lof\MarketPlace\Api\SellerRatingsRepositoryInterface;
+
 
 /**
  * Class SellerById
  *
  * @package Lof\SellerReviewGraphQl\Model\Resolver
  */
-class SellerById extends AbstractSellerQuery implements ResolverInterface
+class SellerById implements ResolverInterface
 {
+ 
+    /**
+     * @var SearchCriteriaBuilder
+     */
+    private $searchCriteriaBuilder;
+
+    /**
+     * @var SellerRatingsRepositoryInterface
+     */
+    private $repository;
+
+    /**
+     * @param SellerRatingsRepositoryInterface $repository
+     * @param SearchCriteriaBuilder $searchCriteriaBuilder
+     */
+
+    public function __construct(
+        SellerRatingsRepositoryInterface $repository
+    ) {
+        $this->repository = $repository;
+    }
+
     /**
      * @inheritDoc
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
-    {
-        $this->_labelFlag = 1;
-        $this->validateArgs($args);
+    public function resolve(
+        Field $field, 
+        $context, 
+        ResolveInfo $info, 
+        array $value = null, 
+        array $args = null
+        ){
 
-        $sellerData = $this->_sellerRepository->get($args['seller_id']);
-        if($sellerData){
-            $products = $sellerData->getProducts();
-            if($items = $products->getItems()){
-                $productArray = [];
-                /** @var \Magento\Catalog\Model\Product $product */
-                foreach ($items as $product) {
-                    $productArray[$product->getId()] = $product->load($product->getId())->getData();
-                    $productArray[$product->getId()]['model'] = $product;
-                }
-
-                $newProducts =[
-                                'total_count' => $products->getTotalCount(),
-                                'items' => $productArray
-                                ];
-                $sellerData->setProducts($newProducts);
-            }
+     
+        if ($args['pageSize'] < 1) {
+            throw new GraphQlInputException(__('pageSize value must be greater than 0.'));
         }
-        return $sellerData?$sellerData->__toArray():[];
+        if ($args['seller_id'] < 1) {
+            throw new GraphQlInputException(__('review_id value must be greater than 0.'));
+        }
+
+        $searchCriteria = $this->searchCriteriaBuilder->build('SellerRating', $args);
+        $searchCriteria->setCurrentPage($args['currentPage']);
+        $searchCriteria->setPageSize($args['pageSize']);
+
+        $searchResult = $this->repository->getSellerRatings($seller_id);
+        $items = $searchResult->getItems();
+
+        return [
+            'total_count' => $searchResult->getTotalCount(),
+            'items'       => $items,
+            'page_info' => [
+                'page_size' => $args['pageSize'],
+                'current_page' => $args['currentPage'],
+            ],
+        ];
     }
+    
 }
