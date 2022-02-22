@@ -15,7 +15,7 @@
   *
   * @category   Landofcoder
   * @package    Lof_SellerReviewGraphQl
-  * @copyright  Copyright (c) 2022 Landofcoder (https://landofcoder.com/)
+  * @copyright  Copyright (c) 2022 Landofcoder (https://www.landofcoder.com/)
   * @license    https://landofcoder.com/terms
   -->
 
@@ -24,7 +24,6 @@
 		<sequence>
 			<module name="Magento_GraphQl"/>
 			<module name="Magento_UrlRewriteGraphQl"/>
-            <module name="Lof_MarketPlace"/>
 		</sequence>
 	</module>
 </config>
