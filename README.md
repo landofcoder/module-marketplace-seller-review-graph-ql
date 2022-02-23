@@ -252,4 +252,30 @@ lofProductBySellerId(
 }
 ```
 
+````
+lofSellerListRating{
+        total_count
+        items {
+            seller_rates {
+                items {
+                    created_at
+                    customer_id
+                    detail
+                    email
+                    nickname
+                    rate1
+                    rate2
+                    rate3
+                    rating_id
+                    seller_id
+                    status
+                    title
+                }
+                total_count
+            }
+            seller_id
+        }
+    }
+````
+
 

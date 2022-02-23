@@ -36,6 +36,7 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\GraphQl\Query\Resolver\Argument\SearchCriteria\Builder as SearchCriteriaBuilder;
 use Magento\Framework\GraphQl\Query\Resolver\Argument\SearchCriteria\ArgumentApplier\Filter;
 use Lof\MarketPlace\Api\SellerRatingsRepositoryInterface;
+use Lof\MarketPlace\Model\SellerRatingsRepository;
 
 
 /**
@@ -46,15 +47,15 @@ use Lof\MarketPlace\Api\SellerRatingsRepositoryInterface;
 class SellerById implements ResolverInterface
 {
  
-    /**
-     * @var SearchCriteriaBuilder
-     */
-    private $searchCriteriaBuilder;
 
     /**
      * @var SellerRatingsRepositoryInterface
      */
     private $repository;
+ /**
+     * @var SearchCriteriaBuilder
+     */
+    private $searchCriteriaBuilder;
 
     /**
      * @param SellerRatingsRepositoryInterface $repository
@@ -62,9 +63,12 @@ class SellerById implements ResolverInterface
      */
 
     public function __construct(
-        SellerRatingsRepositoryInterface $repository
+        SellerRatingsRepositoryInterface $repository,
+        SearchCriteriaBuilder $searchCriteriaBuilder
     ) {
         $this->repository = $repository;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+
     }
 
     /**
@@ -78,29 +82,28 @@ class SellerById implements ResolverInterface
         array $args = null
         ){
 
-     
-        if ($args['pageSize'] < 1) {
-            throw new GraphQlInputException(__('pageSize value must be greater than 0.'));
+            $this->vaildateArgs($args);
+
+            $searchCriteria = $this->searchCriteriaBuilder->build('lof_marketplace_seller', $args);
+            $searchCriteria->setCurrentPage($args['currentPage']);
+            $searchCriteria->setPageSize($args['pageSize']);
+            $searchResult = $this->repository->getSellerRatings($seller_id);
+    
+            return [
+                'total_count' => $searchResult->getTotalCount(),
+                'items' => $searchResult->getItems(),
+            ];
         }
-        if ($args['seller_id'] < 1) {
-            throw new GraphQlInputException(__('review_id value must be greater than 0.'));
+    
+        /**
+         * @param array $args
+         * @throws GraphQlInputException
+         */
+        private function vaildateArgs(array $args): void
+        {
+            if (isset($args['seller_id']) && $args['seller_id'] < 1) {
+                throw new GraphQlInputException(__('seller_id value must be greater than 0.'));
+            }
         }
-
-        $searchCriteria = $this->searchCriteriaBuilder->build('SellerRating', $args);
-        $searchCriteria->setCurrentPage($args['currentPage']);
-        $searchCriteria->setPageSize($args['pageSize']);
-
-        $searchResult = $this->repository->getSellerRatings($seller_id);
-        $items = $searchResult->getItems();
-
-        return [
-            'total_count' => $searchResult->getTotalCount(),
-            'items'       => $items,
-            'page_info' => [
-                'page_size' => $args['pageSize'],
-                'current_page' => $args['currentPage'],
-            ],
-        ];
-    }
     
 }
