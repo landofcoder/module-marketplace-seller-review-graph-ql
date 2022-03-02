@@ -27,6 +27,7 @@ type Query {
 
 type Customer {
     sellerRatings (
+        sellerUrl: String! @doc(description: "Seller Url key, example: seller-a")
         filter: SellerRatingFilterInput @doc(description: "Identifies which seller messages filter inputs to search for and return.")
         pageSize: Int = 20 @doc(description: "Specifies the maximum number of results to return at once. This attribute is optional.")
         currentPage: Int = 1 @doc(description: "Specifies which page of results to return. The default value is 1.")
@@ -35,7 +36,10 @@ type Customer {
 }
 
 type Mutation {
-    LofMkpReviewSeller(input: ReviewInput!): Res @resolver(class: "\\Lof\\SellerReviewGraphQl\\Model\\Resolver\\Customer\\ReviewSeller") @doc(description: "Review Seller")
+    submitSellerReview(
+        sellerUrl: String! @doc(description: "Seller Url key, example: seller-a")
+        input: ReviewInput! @doc(description: "Rating Input")
+    ): Res @resolver(class: "\\Lof\\SellerReviewGraphQl\\Model\\Resolver\\Customer\\ReviewSeller") @doc(description: "Review Seller")
 }
 
 type SellerRates {
@@ -46,12 +50,10 @@ type SellerRates {
 type SellerRate {
     rating_id: Int @doc(description: "Rating ID")
     seller_id: Int @doc(description: "Seller ID")
-    customer_id: Int @doc(description: "Customer ID")
     rate1: Int @doc(description: "Rate 1")
     rate2: Int @doc(description: "Rate 2")
     rate3: Int @doc(description: "Rate 3")
     rating: Int @doc(description: "Total Rate")
-    email: String @doc(description: "Email")
     title: String @doc(description: "Title")
     status: String @doc(description: "Status")
     detail: String @doc(description: "Detail")
@@ -61,13 +63,11 @@ type SellerRate {
 
 input SellerRatingFilterInput {
     seller_id: FilterEqualTypeInput @doc(description: "Seller ID")
-    seller_id: FilterEqualTypeInput @doc(description: "seller_id")
-    customer_id: FilterEqualTypeInput @doc(description: "customer_id")
+    rating_id: FilterEqualTypeInput @doc(description: "rating_id")
     rate1: FilterEqualTypeInput @doc(description: "rate1")
     rate2: FilterEqualTypeInput @doc(description: "rate2")
     rate3: FilterEqualTypeInput @doc(description: "rate3")
     rating: FilterEqualTypeInput @doc(description: "rating")
-    email: FilterTypeInput @doc(description: "email")
     title: FilterTypeInput @doc(description: "title")
     detail: FilterTypeInput @doc(description: "detail")
     status: FilterEqualTypeInput @deprecated(reason: "status")
@@ -75,8 +75,19 @@ input SellerRatingFilterInput {
     or: SellerRatingFilterInput @doc(description: "The keyword required to perform a logical OR comparison")
 }
 
+input SellerRatingSortInput {
+    seller_id: SortEnum @doc(description: "Sort by the seller_id assigned to each message (default).")
+    detail: SortEnum @doc(description: "Sort by the detail.")
+    rating_id: SortEnum @doc(description: "Sort by the rating_id.")
+    rate1: SortEnum @doc(description: "Sort by the rate1 assigned to each order.")
+    rate2: SortEnum @doc(description: "Sort by the rate2 assigned to each message.")
+    rate3: SortEnum @doc(description: "Sort by the rate3 assigned to each message.")
+    rating: SortEnum @doc(description: "Sort by the rating assigned to each message.")
+    detail: SortEnum @doc(description: "Sort by the detail assigned to each message.")
+    nickname: SortEnum @doc(description: "Sort by the nickname assigned to each message.")
+}
+
 input ReviewInput {
-    seller_id  : String!
     rate1  : Int!
     rate2  : Int!
     rate3  : Int!
