@@ -69,6 +69,15 @@ class ReviewSeller implements ResolverInterface
      */
     protected $collectionFactory;
 
+    /**
+     * @var \Lof\MarketPlace\Model\SellerFactory
+     */
+    protected $sellerFactory;
+
+    /**
+     * @var Magento\Customer\Model\CustomerFactory
+     */
+    private $customerFactory;
 
     /**
      * ReviewSeller constructor.
@@ -78,6 +87,8 @@ class ReviewSeller implements ResolverInterface
      * @param Data $helper
      * @param Sender $sender
      * @param CollectionFactory $collectionFactory
+     * @param \Lof\MarketPlace\Model\SellerFactory $sellerFactory
+     * @param CustomerFactory $customerFactory
      */
     public function __construct(
         RatingFactory $rateSeller,
@@ -85,7 +96,9 @@ class ReviewSeller implements ResolverInterface
         SellersFrontendRepositoryInterface $sellersRepository,
         Data $helper,
         Sender $sender,
-        CollectionFactory $collectionFactory
+        CollectionFactory $collectionFactory,
+        \Lof\MarketPlace\Model\SellerFactory $sellerFactory,
+        CustomerFactory $customerFactory
     ) {
         $this->_rateSeller = $rateSeller;
         $this->sellerInterface = $sellerInterface;
@@ -93,6 +106,8 @@ class ReviewSeller implements ResolverInterface
         $this->helper = $helper;
         $this->sender = $sender;
         $this->collectionFactory = $collectionFactory;
+        $this->sellerFactory = $sellerFactory;
+        $this->customerFactory = $customerFactory;
     }
 
     /**
@@ -114,45 +129,7 @@ class ReviewSeller implements ResolverInterface
             throw new GraphQlInputException(__('sellerUrl value is required for query.'));
         }
 
-        /** @var ContextInterface $context */
-        if (true === $context->getExtensionAttributes()->getIsCustomer()) {
 
-            $customerId = $context->getUserId();
-
-            $seller = $this->collectionFactory->create()
-                ->addFieldToFilter("url_key", $args['sellerUrl']['0'])
-                ->getFirstItem();
-            $sellerId = $seller->getSellerId();
-
-            if (!isset($sellerId) || !$sellerId) {
-                return [
-                    "code" => 1,
-                    "message" => "Seller does not exits!"
-                ];
-            }
-
-            $args['input']['seller_email'] = $seller->getEmail();
-            $args['input']['seller_name'] = $seller->getName();
-            $args['input']['rating'] = ($args['input']['rate1'] + $args['input']['rate2'] + $args['input']['rate3']) / 3;
-            if ($this->helper->getConfig('general_settings/rating_approval')) {
-                $args['status'] = 'pending';
-            } else {
-                $args['status'] = 'accept';
-            }
-            $ratingModel = $this->_rateSeller->create();
-            $ratingModel->setData($args['input']);
-            $ratingModel->save();
-            $args['namestore'] = $this->helper->getStoreName();
-            $args['urllogin'] = $this->helper->getStoreUrl('customer/account/login');
-
-            if ($this->helper->getConfig('email_settings/enable_send_email')) {
-                $this->sender->newRating($args);
-            }
-            return [
-                "code" => 0,
-                "message" => "Submit rating success!"
-            ];
-        }
 
         $seller = $this->collectionFactory->create()
             ->addFieldToFilter("url_key", $args['sellerUrl']['0'])
@@ -165,6 +142,17 @@ class ReviewSeller implements ResolverInterface
                 "message" => "Seller does not exits!"
             ];
         }
+
+        /** @var ContextInterface $context */
+        if (true === $context->getExtensionAttributes()->getIsCustomer()) {
+            $customerId = $context->getUserId();
+            $customerObject = $this->customerFactory->create()->load($customerId);
+            $customerEmail = $customerObject->getEmail();
+            $customerName = $customerObject->getName();
+            $seller = $this->sellerFactory->create()->load($customerId, 'customer_id');
+            $sellerId = $seller ? $seller->getId() : 0;
+        }
+
         $args['input']['seller_email'] = $seller->getEmail();
         $args['input']['seller_name'] = $seller->getName();
 
