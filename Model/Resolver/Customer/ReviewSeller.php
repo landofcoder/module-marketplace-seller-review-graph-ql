@@ -24,9 +24,6 @@ declare(strict_types=1);
 
 namespace Lof\SellerReviewGraphQl\Model\Resolver\Customer;
 
-use Lof\MarketPlace\Api\Data\SellerInterface;
-use Lof\MarketPlace\Api\SellersFrontendRepositoryInterface;
-use Lof\MarketPlace\Api\SellersRepositoryInterface;
 use Lof\MarketPlace\Helper\Data;
 use Lof\MarketPlace\Model\RatingFactory;
 use Lof\MarketPlace\Model\Sender;
@@ -42,19 +39,11 @@ use Lof\MarketPlace\Model\ResourceModel\Seller\CollectionFactory;
  */
 class ReviewSeller implements ResolverInterface
 {
-
-    /**
-     * @var SellerInterface
-     */
-    private $sellerInterface;
     /**
      * @var RatingFactory
      */
-    private $_rateSeller;
-    /**
-     * @var SellersRepositoryInterface
-     */
-    private $sellerRepository;
+    private $rateSeller;
+
     /**
      * @var Data
      */
@@ -70,44 +59,22 @@ class ReviewSeller implements ResolverInterface
     protected $collectionFactory;
 
     /**
-     * @var \Lof\MarketPlace\Model\SellerFactory
-     */
-    protected $sellerFactory;
-
-    /**
-     * @var Magento\Customer\Model\CustomerFactory
-     */
-    private $customerFactory;
-
-    /**
      * ReviewSeller constructor.
      * @param RatingFactory $rateSeller
-     * @param SellerInterface $sellerInterface
-     * @param SellersFrontendRepositoryInterface $sellersRepository
      * @param Data $helper
      * @param Sender $sender
      * @param CollectionFactory $collectionFactory
-     * @param \Lof\MarketPlace\Model\SellerFactory $sellerFactory
-     * @param CustomerFactory $customerFactory
      */
     public function __construct(
         RatingFactory $rateSeller,
-        SellerInterface $sellerInterface,
-        SellersFrontendRepositoryInterface $sellersRepository,
         Data $helper,
         Sender $sender,
-        CollectionFactory $collectionFactory,
-        \Lof\MarketPlace\Model\SellerFactory $sellerFactory,
-        CustomerFactory $customerFactory
+        CollectionFactory $collectionFactory
     ) {
-        $this->_rateSeller = $rateSeller;
-        $this->sellerInterface = $sellerInterface;
-        $this->sellerRepository = $sellersRepository;
+        $this->rateSeller = $rateSeller;
         $this->helper = $helper;
         $this->sender = $sender;
         $this->collectionFactory = $collectionFactory;
-        $this->sellerFactory = $sellerFactory;
-        $this->customerFactory = $customerFactory;
     }
 
     /**
@@ -129,12 +96,10 @@ class ReviewSeller implements ResolverInterface
             throw new GraphQlInputException(__('sellerUrl value is required for query.'));
         }
 
-
-
         $seller = $this->collectionFactory->create()
             ->addFieldToFilter("url_key", $args['sellerUrl']['0'])
             ->getFirstItem();
-        $sellerId = $seller->getSellerId();
+        $sellerId = (int) $seller->getSellerId();
 
         if (!isset($sellerId) || !$sellerId) {
             return [
@@ -143,26 +108,17 @@ class ReviewSeller implements ResolverInterface
             ];
         }
 
-        /** @var ContextInterface $context */
-        if (true === $context->getExtensionAttributes()->getIsCustomer()) {
-            $customerId = $context->getUserId();
-            $customerObject = $this->customerFactory->create()->load($customerId);
-            $customerEmail = $customerObject->getEmail();
-            $customerName = $customerObject->getName();
-            $seller = $this->sellerFactory->create()->load($customerId, 'customer_id');
-            $sellerId = $seller ? $seller->getId() : 0;
-        }
-
-        $args['input']['seller_email'] = $seller->getEmail();
-        $args['input']['seller_name'] = $seller->getName();
+        // $args['input']['seller_email'] = $seller->getSellerId();
+        // $args['input']['seller_name'] =$seller->getSellerId();
+        // $args['input']['seller_id'] = $sellerId;
 
         $args['input']['rating'] = ($args['input']['rate1'] + $args['input']['rate2'] + $args['input']['rate3']) / 3;
         if ($this->helper->getConfig('general_settings/rating_approval')) {
-            $args['status'] = 'pending';
+            $args['input']['status'] = 'pending';
         } else {
-            $args['status'] = 'accept';
+            $args['input']['status'] = 'accept';
         }
-        $ratingModel = $this->_rateSeller->create();
+        $ratingModel = $this->rateSeller->create();
         $ratingModel->setData($args['input']);
         $ratingModel->save();
         $args['namestore'] = $this->helper->getStoreName();
